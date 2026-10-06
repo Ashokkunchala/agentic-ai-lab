@@ -1,0 +1,33 @@
+%% Model routing: one adapter, several models. This is why the runtime depends
+%% on a three-method protocol instead of a vendor SDK.
+flowchart TD
+    G(["Goal"]) --> CLASSIFY{"Classify the step"}
+
+    CLASSIFY -->|"simple extraction,<br/>classification, rewrite"| CHEAP["Small fast model"]
+    CLASSIFY -->|"multi-step reasoning,<br/>tool planning"| STRONG["Frontier reasoning model"]
+    CLASSIFY -->|"code, config, structured<br/>output, schemas"| CODE["Code-specialised model"]
+    CLASSIFY -->|"private or regulated data"| LOCAL["Self-hosted open-weights model"]
+
+    CHEAP --> POOL["Model router<br/>in shared/model.py"]
+    STRONG --> POOL
+    CODE --> POOL
+    LOCAL --> POOL
+
+    POOL --> BUDGET{"cost budget left?"}
+    BUDGET -->|no| DEGRADE["degrade: cheaper model,<br/>or return a partial answer"]
+    BUDGET -->|yes| CALL["call provider"]
+    CALL --> PARSE["parse_action: never raises"]
+    PARSE --> ADAPT["back to the loop as an Action"]
+
+    CACHE["Prompt cache +<br/>retrieval caching"] -.-> POOL
+    FALLBACK["Provider failure"] -.-> POOL
+
+    NOTE["What you are buying with a bigger model:<br/>fewer steps, fewer retries, less total cost.<br/>Sometimes a smaller model is cheaper overall."]
+    CALL -.-> NOTE
+
+    classDef small fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef big fill:#7a4b12,stroke:#452a08,color:#fff
+    classDef bad fill:#8c2f2f,stroke:#4d1616,color:#fff
+    class CHEAP,LOCAL small
+    class STRONG,CODE big
+    class DEGRADE bad

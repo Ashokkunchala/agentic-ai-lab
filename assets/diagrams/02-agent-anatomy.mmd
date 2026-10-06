@@ -1,0 +1,47 @@
+%% Agent anatomy - the seven components every agent has, whether or not it calls itself one.
+%% If a component is missing, name what is missing: "no policy" or "no verification".
+flowchart LR
+    GOAL["1 Goal<br/>desired outcome"] --> PLAN
+
+    subgraph RUNTIME["Agent runtime"]
+        PLAN["2 Planner<br/>proposes the next action"]
+        STATE["3 State<br/>goal, plan, observations,<br/>approvals, budgets"]
+        MEM["4 Memory<br/>context, working, persistent"]
+    end
+
+    subgraph GATE["The gate - never skip this"]
+        POLICY["5 Policy<br/>allow / require approval / deny"]
+    end
+
+    subgraph WORLD["The world"]
+        TOOLS["6 Tools<br/>named, typed, risk-declared"]
+        WORLD["External systems<br/>AWS, GitHub, Kubernetes, files"]
+    end
+
+    VERIFY["7 Verification<br/>did the goal actually succeed?"]
+
+    PLAN -->|proposes Action| POLICY
+    POLICY -->|allow| TOOLS
+    POLICY -->|require approval| HUMAN(["Human approves"])
+    HUMAN -->|approved| TOOLS
+    POLICY -->|deny| OBS
+    TOOLS --> WORLD
+    WORLD -->|result| OBS["Observation<br/>becomes new state"]
+    OBS --> STATE
+    STATE --> PLAN
+    STATE --> VERIFY
+    VERIFY -->|not yet| PLAN
+    VERIFY -->|yes| DONE(["Goal complete"])
+
+    NOTE["The one rule:<br/>a model proposes, it never executes"]
+    POLICY -.-> NOTE
+
+    classDef goal fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef gate fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef world fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef ok fill:#2d6b2d,stroke:#163416,color:#fff
+
+    class GOAL goal
+    class POLICY,HUMAN gate
+    class TOOLS,WORLD world
+    class DONE ok

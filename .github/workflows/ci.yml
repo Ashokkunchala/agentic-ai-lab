@@ -1,0 +1,74 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege by default. The workflow needs exactly one thing: read code.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # CI runs the version pyproject declares as the floor, so a learner on
+        # 3.13 never gets a surprise a 3.11 user would not also get.
+        python-version: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: ruff format --check .
+
+      - name: Type check
+        run: mypy
+
+      - name: Test (fast)
+        run: pytest -q -m "not slow"
+
+      - name: Test (everything)
+        run: pytest -q
+
+      - name: Diagrams parse
+        # A broken .mmd file is a broken lesson. Fail the build, not the reader.
+        run: python scripts/check_diagrams.py
+
+  no-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject committed secrets
+        run: |
+          if git grep -nIE '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})' -- . \
+            ':!docs/**' ':!*.example'; then
+            echo "::error::possible credential committed to the repository"
+            exit 1
+          fi
+          echo "no credentials found"

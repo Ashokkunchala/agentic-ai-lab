@@ -1,0 +1,35 @@
+%% Three memory layers. They differ by lifetime, by size limit, and by who pays
+%% when they grow. Conflating them is the most common memory bug.
+flowchart TD
+    subgraph TURN["Immediate context - one model call"]
+        CTX["Prompt: goal + last N observations + retrieved chunks"]
+        CTX -->|"dies at end of turn"| X1(["gone"])
+    end
+
+    subgraph WORK["Working memory - one run - shared/state.py AgentState.memory"]
+        W["key/value dict<br/>hard capacity, LRU eviction<br/>Memory(capacity=32)"]
+        W -->|"dies with the process"| X2(["gone"])
+    end
+
+    subgraph PERSIST["Persistent memory - survives restarts - shared/memory.py"]
+        P["one JSON file<br/>atomic writes<br/>corrupt file degrades to empty"]
+        P -->|"survives"| RESTART(["next process"])
+    end
+
+    subgraph RETR["Retrieval memory - large, queried - shared/retrieval.py"]
+        R["chunk store + TF-IDF index<br/>TB-scale in production"]
+        R -->|"returns 2-5 cited chunks"| CTX
+    end
+
+    LOOP["Agent loop"] -->|"writes facts"| W
+    LOOP -->|"flushes at end of run"| P
+    LOOP -->|"queries per step"| R
+    W -->|"folded into the prompt"| CTX
+
+    NOTE["Rule of thumb:<br/>if it fits in one prompt, it is context,<br/>not memory"]
+    CTX -.-> NOTE
+
+    classDef warn fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef good fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    class R,P good
+    class NOTE warn

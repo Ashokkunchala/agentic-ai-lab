@@ -1,0 +1,44 @@
+%% Multi-agent orchestration, with the cost shown honestly.
+%% Each hop is a new contract, a new failure point, and more latency.
+sequenceDiagram
+    autonumber
+    participant Goal
+    participant Orch as Orchestrator
+    participant Budget
+    participant Res as Researcher
+    participant Rev as Reviewer
+    participant Human
+
+    Goal->>Orch: "what evidence does policy require for a write"
+    Orch->>Budget: charge_step()
+    Budget-->>Orch: within limits
+
+    Orch->>Res: __call__(task) - typed contract
+    Res-->>Orch: Finding(summary, evidence, confidence)
+    Note right of Res
+      A typed result with evidence is what
+      makes delegation auditable. Free prose
+      forces the parent to trust it blindly.
+    end Note
+
+    alt no evidence returned
+        Orch-->>Human: escalate, do not guess
+    else evidence found
+        Orch->>Budget: charge_step() + charge_tool_call()
+        Orch->>Rev: __call__(task, finding)
+        Rev-->>Orch: Finding(accepted or rejected)
+
+        alt reviewer rejects
+            Orch->>Human: needs_human = true
+        else accepted and confidence >= threshold
+            Orch-->>Goal: answer with confidence
+        end
+    end
+
+    Note over Orch,Rev
+      Start with ONE agent and several tools.
+      Add an agent only when you need a different
+      permission set, a different context window,
+      or an independent judgement - not because
+      the prompt got long.
+    end Note

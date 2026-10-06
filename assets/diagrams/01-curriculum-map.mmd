@@ -1,0 +1,55 @@
+%% Agentic AI Lab - curriculum map
+%% Render: paste into https://mermaid.live  or  export with `npx @mermaid-js/mermaid-cli`
+%% Every node links to the folder that teaches it. Read top to bottom.
+flowchart TD
+    START(["Start: docs/START-HERE.md"]) --> M00
+
+    subgraph CORE["Core runtime - build these carefully"]
+        M00["00 Foundations<br/>concepts, vocabulary"]
+        M01["01 First Agent<br/>the loop, by hand"]
+        M02["02 Tool Calling<br/>schema, validation, risk"]
+        M03["03 Agent Loop<br/>budgets, policy, verification"]
+    end
+
+    subgraph CAPS["Capabilities - add when the core works"]
+        M04["04 Memory<br/>3 layers, 3 lifetimes"]
+        M05["05 Planning<br/>dependency graph"]
+        M06["06 RAG<br/>retrieval + citations"]
+        M07["07 MCP<br/>transport, not runtime"]
+    end
+
+    subgraph SCALE["Scale - only after the core is solid"]
+        M08["08 Multi-Agent<br/>delegation cost"]
+        M09["09 Coding Agent<br/>read-only first"]
+        M10["10 DevOps Agent<br/>evidence before mutation"]
+        M11["11 Autonomous Agent<br/>bounded autonomy"]
+    end
+
+    subgraph PROD["Production - what you actually operate"]
+        M12["12 Production Architecture<br/>logs, metrics, traces, evals"]
+        M13["13 Cloudflare<br/>control plane at the edge"]
+    end
+
+    M00 --> M01 --> M02 --> M03
+    M03 --> M04 --> M05 --> M06 --> M07
+    M07 --> M08 --> M09 --> M10 --> M11
+    M11 --> M12 --> M13
+
+    M03 -. "revisit whenever<br/>a run misbehaves" .-> M12
+    M10 -. "same discipline,<br/>real infrastructure" .-> M12
+
+    DONE(["Checkpoint: docs/CHECKLIST.md"])
+
+    M13 --> DONE
+
+    classDef core fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef caps fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef scale fill:#7a4b12,stroke:#452a08,color:#fff
+    classDef prod fill:#5c2d6b,stroke:#33183b,color:#fff
+    classDef edge fill:#333,stroke:#000,color:#fff
+
+    class M00,M01,M02,M03 core
+    class M04,M05,M06,M07 caps
+    class M08,M09,M10,M11 scale
+    class M12,M13 prod
+    class START,DONE edge

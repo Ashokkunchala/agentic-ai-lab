@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-ai-lab"
+version = "1.0.0"
+description = "A from-scratch to production curriculum for building AI agents, with runnable lessons, diagrams and notes."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Ashok Kunchala" }]
+keywords = ["ai", "agents", "llm", "curriculum", "mcp", "observability"]
+classifiers = [
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Education",
+]
+
+# Kept deliberately tiny. The runtime is stdlib + pydantic so that a learner
+# can clone and run without an API key, a cloud account or a package conflict.
+dependencies = [
+  "pydantic>=2.7,<3",
+  "python-dotenv>=1.0,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+  "ruff>=0.6,<1",
+  "mypy>=1.11,<2",
+]
+
+[project.urls]
+Documentation = "https://github.com/your-org/agentic-ai-lab#readme"
+
+[tool.setuptools]
+packages = ["shared"]
+
+[tool.pytest.ini_options]
+# testpaths keeps `pytest` from wandering into lesson folders, and the two
+# markers let a learner run only the slow MCP subprocess tests when they want.
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra --strict-markers"
+markers = [
+  "slow: spawns a subprocess or writes files",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = [".venv", ".runs", "node_modules"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # warnings
+  "F",    # pyflakes
+  "I",    # isort
+  "UP",   # pyupgrade
+  "B",    # bugbear
+  "SIM",  # simplify
+  "C4",   # comprehensions
+  "RET",  # return consistency
+]
+ignore = [
+  "E501",    # line length is handled by the formatter, not the linter
+  "B008",    # dataclass field(default_factory=...) is the idiomatic form here
+  "RET504",  # a named result before return reads better in a teaching repo
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Lessons bootstrap sys.path so they can run as plain scripts; that is the
+# lesson, not an accident.
+"0*-*/**.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["shared"]
+strict = false
+warn_unused_ignores = false
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["shared.model"]
+# The provider adapter is deliberately partial; a real one implements call().
+disallow_untyped_defs = false

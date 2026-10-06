@@ -1,0 +1,41 @@
+%% Threats on the left, the control that answers each on the right.
+%% Read it as a checklist during design review, not as documentation afterwards.
+flowchart LR
+    subgraph THREATS["Threats"]
+        T1["Prompt injection via<br/>repository or web content"]
+        T2["Over-privileged credentials"]
+        T3["Destructive command"]
+        T4["Secret exfiltration"]
+        T5["Unbounded execution or spend"]
+        T6["Compromised or malicious<br/>MCP server"]
+        T7["Data leakage across tenants"]
+        T8["Model invents a tool<br/>or an argument"]
+    end
+
+    subgraph CONTROLS["Controls"]
+        C1["Treat all retrieved content as DATA,<br/>never as instructions.<br/>Cite it, do not obey it."]
+        C2["Least-privilege short-lived credentials,<br/>scoped to one repo, one cluster,<br/>one account. No ambient secrets."]
+        C3["Risk=DESTRUCTIVE + approval gate +<br/>confirm flag + dry-run default"]
+        C4["Egress allowlist. No secret in a prompt,<br/>a log line or a queue message."]
+        C5["Budgets: steps, tool calls, retries,<br/>wall clock, cost. Stall detection."]
+        C6["Server allowlist, tool allowlist,<br/>output size cap, timeouts, audit log"]
+        C7["Per-tenant identity, per-tenant<br/>policy, per-tenant store keys"]
+        C8["Registry allowlist + schema validation.<br/>Unknown tool = observation, not execution."]
+    end
+
+    T1 --> C1
+    T2 --> C2
+    T3 --> C3
+    T4 --> C4
+    T5 --> C5
+    T6 --> C6
+    T7 --> C7
+    T8 --> C8
+
+    PRINCIPLE["Least privilege, least surprise,<br/>least trust in your own model's output"]
+    C3 -.-> PRINCIPLE
+
+    classDef threat fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef control fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    class T1,T2,T3,T4,T5,T6,T7,T8 threat
+    class C1,C2,C3,C4,C5,C6,C7,C8 control

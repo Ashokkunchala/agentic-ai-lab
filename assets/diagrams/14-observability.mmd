@@ -1,0 +1,48 @@
+%% Four signals, four questions. Using the wrong one is why incidents take hours.
+flowchart TD
+    RUN(["one agent run"]) --> L["LOGS<br/>what happened, in order"]
+    RUN --> M["METRICS<br/>is the system healthy"]
+    RUN --> T["TRACES<br/>where did the time go,<br/>what caused what"]
+    RUN --> E["EVALS<br/>did the behaviour still hold"]
+
+    subgraph LD["logs - append-only JSONL"]
+        L1["run_id, step_id, tool,<br/>status, duration_ms, error_type"]
+        L2["query: 'show me every policy.decision<br/>for run X'"]
+        L1 --> L2
+    end
+
+    subgraph MD["metrics - counters and aggregates"]
+        M1["success rate, tool failure rate,<br/>steps per task, retries,<br/>approvals granted/refused, cost, latency"]
+        M2["query: 'alert when success rate<br/>drops below 95% over 15m'"]
+        M1 --> M2
+    end
+
+    subgraph TD2["traces - nested spans with parent ids"]
+        T1["model call -> tool call -><br/>result -> next decision"]
+        T2["query: 'why was this run 4x slower<br/>than p50'"]
+        T1 --> T2
+    end
+
+    subgraph ED["evals - cases with assertions"]
+        E1["expect_tools, forbid_tools,<br/>expect_status, stop reason"]
+        E2["query: 'did this prompt change<br/>break the read-only guarantee'"]
+        E1 --> E2
+    end
+
+    L2 --> ROOT["Root cause:<br/>reconstruct exactly what happened"]
+    M2 --> ROOT
+    T2 --> ROOT
+    E2 --> PREVENT["Prevent recurrence:<br/>add a case so it fails loudly next time"]
+
+    NOTE["If you cannot explain a run from its logs,<br/>you do not have logs, you have vibes."]
+    L -.-> NOTE
+
+    classDef log fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef met fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef trc fill:#7a4b12,stroke:#452a08,color:#fff
+    classDef evl fill:#5c2d6b,stroke:#33183b,color:#fff
+
+    class L,L1,L2 log
+    class M,M1,M2 met
+    class T,T1,T2 trc
+    class E,E1,E2 evl

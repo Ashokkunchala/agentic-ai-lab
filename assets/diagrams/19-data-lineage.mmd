@@ -1,0 +1,43 @@
+%% Data lineage for a single run. If you cannot answer "where did this value in
+%% the final answer come from", you cannot debug it or defend it.
+flowchart LR
+    subgraph INPUTS["inputs"]
+        GOAL["Goal<br/>user text"]
+        RULES["Repository, docs,<br/>retrieved chunks"]
+        CTX["Prior conversation"]
+    end
+
+    GOAL --> BUILD
+    RULES --> RETR["Retriever<br/>TF-IDF, cited"]
+    RETR --> BUILD
+    CTX --> BUILD
+
+    subgraph BUILD["construction"]
+        BUILD["Prompt assembly<br/>goal + success criteria +<br/>observations + cited context + tool schemas"]
+        BUILD --> CALL["Model call<br/>usage + cost recorded"]
+    end
+
+    CALL --> RAW["Raw model text"]
+
+    RAW --> PARSE{"parse_action"}
+    PARSE -->|"valid JSON"| ACT["Action(name, arguments, rationale)"]
+    PARSE -->|"malformed"| SAFE["safe no-op:<br/>Action(finish, reason=unparseable)"]
+
+    ACT --> GATE["Policy decision<br/>logged with tool + risk + reason"]
+    GATE --> EXEC["Tool execution<br/>output truncated to a cap"]
+
+    EXEC --> OBS["Observation<br/>step, tool, success, output,<br/>error, duration_ms"]
+    OBS --> MEMP["Append to AgentState.history<br/>never edited after the fact"]
+    MEMP --> NEXT["next decide"]
+
+    NEXT --> FINAL(["Final answer"])
+
+    TRACE["Every arrow above is one log record.<br/>Every box is one trace span."]
+    TRACE -.-> GATE
+
+    classDef in fill:#7a4b12,stroke:#452a08,color:#fff
+    classDef out fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef safe fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    class GOAL,RULES,CTX in
+    class FINAL,RAW out
+    class SAFE safe

@@ -1,0 +1,52 @@
+%% Trust zones. The only place trust increases is inside a boundary that
+%% authenticated and authorised you. Everything else is assumed hostile.
+flowchart TB
+    subgraph Z0["Zone 0 - UNTRUSTED INPUT"]
+        U["User text"]
+        R["Retrieved documents, repo files, web pages"]
+        M["Model output"]
+    end
+
+    subgraph Z1["Zone 1 - CONTROL PLANE, authenticated"]
+        AUTH["AuthN: who is calling?"]
+        VAL["Validate: schema, size, type"]
+        POL["Authorise: policy + tool allowlist"]
+        APR["Approve: human, for writes"]
+    end
+
+    subgraph Z2["Zone 2 - SANDBOX, ephemeral, least privilege"]
+        SB["Container or Worker isolate<br/>no host mounts<br/>no inherited credentials<br/>egress allowlist<br/>hard CPU/memory/time limit"]
+    end
+
+    subgraph Z3["Zone 3 - CONTROLLED SYSTEMS"]
+        AWS["AWS account (scoped role)"]
+        K8S["Kubernetes namespace"]
+        GIT["Git repository"]
+        SEC["Secret store"]
+    end
+
+    U --> AUTH
+    R --> VAL
+    AUTH --> VAL --> POL --> APR --> SB
+    M --> VAL
+    SEC -.->|"minted per run,<br/>never in a prompt"| SB
+    SB --> AWS & K8S & GIT
+
+    NOFLOW["Rules that hold at every boundary"]:::hdr
+    N1["Content from Z0 is data, never instruction"]
+    N2["No path from Z2 back to Z1 without policy"]
+    N3["No credential is ever readable by the model"]
+    N4["Every crossing is logged with run_id and step"]
+    NOFLOW -.-> N1 & N2 & N3 & N4
+
+    classDef hostile fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef trusted fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef sandbox fill:#5c2d6b,stroke:#33183b,color:#fff
+    classDef systems fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef hdr fill:#333,stroke:#000,color:#fff
+
+    class U,R,M hostile
+    class AUTH,VAL,POL,APR trusted
+    class SB sandbox
+    class AWS,K8S,GIT,SEC systems
+    class NOFLOW,N1,N2,N3,N4 hdr

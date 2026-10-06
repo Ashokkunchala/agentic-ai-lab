@@ -1,0 +1,6 @@
+# Tooling for contributors. Learners do not need this to run the lessons.
+-r requirements.txt
+
+pytest>=8,<9
+ruff>=0.6,<1
+mypy>=1.11,<2

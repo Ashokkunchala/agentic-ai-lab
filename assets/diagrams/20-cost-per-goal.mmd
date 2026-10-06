@@ -1,0 +1,14 @@
+%% Cost and latency are not the same axis. A cheaper model that needs more steps
+%% is not cheaper. Measure cost per COMPLETED GOAL, never per API call.%%
+%% bar  = small fast model   (cheap per call, needs more steps)
+%% line = frontier reasoning (expensive per call, usually fewer steps)
+%%
+%% The crossover is the lesson: below ~6 steps the small model wins on cost,
+%% above it the frontier model wins despite the higher unit price.
+%% Numbers are illustrative, not benchmarks. Replace with your own measurements.
+xychart-beta
+    title "Illustrative cost per completed goal (USD)"
+    x-axis ["1 step", "3 steps", "6 steps", "10 steps"]
+    y-axis "USD per goal" 0 --> 0.60
+    bar [0.02, 0.05, 0.09, 0.14]
+    line [0.03, 0.11, 0.27, 0.52]

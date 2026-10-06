@@ -1,0 +1,47 @@
+%% The DevOps incident runbook as an enforced flow.
+%% Two independent gates stand between a model and production:
+%% policy approval, and the tool's own confirm flag.
+flowchart TD
+    START(["Alert: checkout tasks failing"]) --> O1
+
+    subgraph OBSERVE["OBSERVE - read only, always allowed"]
+        O1["service_status<br/>desired / running / pending, deployment"]
+        O2["target_group_health<br/>healthy vs unhealthy"]
+        O3["task_stop_reasons<br/>CannotPullContainerError"]
+        O4["read_logs<br/>'manifest unknown'"]
+        O1 --> O2 --> O3 --> O4
+    end
+
+    O4 --> H["HYPOTHESISE<br/>image v2.14.0 was never published<br/>+ falsified_if: image exists and tasks start"]
+    H --> V{"VALIDATE<br/>can evidence falsify this?"}
+    V -->|no| MORE["collect more evidence<br/>DO NOT MUTATE"]
+    V -->|yes| PR["PROPOSE<br/>roll back to v2.13.4<br/>+ reason + rollback + verification"]
+
+    PR --> G1{"GATE 1<br/>PolicyEngine:<br/>risk=WRITE"}
+
+    G1 -->|deny| BLOCK(["blocked"])
+    G1 -->|approval required| H2{"GATE 2<br/>human"}
+    H2 -->|refused| PARK(["park the run<br/>waiting_approval"])
+    H2 -->|approved| G2{"GATE 3<br/>tool confirm flag"}
+
+    G2 -->|confirm != true| NOOP["no-op, nothing changed"]
+    G2 -->|confirm == true| APPLY["APPLY<br/>roll back to v2.13.4"]
+
+    APPLY --> VER["VERIFY<br/>running == desired<br/>healthy targets, clean logs,<br/>user-facing behaviour"]
+
+    VER --> OK{"goal actually met?"}
+    OK -->|yes| DONE(["resolved"])
+    OK -->|no| BACK["revert the revert<br/>and escalate"]
+
+    NOTE["A green command exit code is not proof<br/>that the goal succeeded"]
+    VER -.-> NOTE
+
+    classDef obs fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef gate fill:#7a4b12,stroke:#452a08,color:#fff
+    classDef bad fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef ok fill:#2d6b2d,stroke:#163416,color:#fff
+
+    class O1,O2,O3,O4 obs
+    class G1,H2,G2,V,OK gate
+    class BLOCK,PARK,NOOP,BACK bad
+    class DONE,APPLY ok

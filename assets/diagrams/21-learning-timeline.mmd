@@ -1,0 +1,40 @@
+%% A suggested 12-week plan. The point is the SHAPE, not the dates: foundations
+%% first, production last, and a checkpoint every week that you can fail.
+%%
+%% Weeks 1-4  core runtime. You cannot skip ahead; lessons 02 and 03 assume 01.
+%% Weeks 5-7  capabilities. Useful, and each one is optional in a real project.
+%% Weeks 8-10 scale. Most projects never need weeks 9-10.
+%% Weeks 11-12 production. The part employers actually ask about.
+%%
+%% Stretch the schedule. If week 3 is not comfortable, make it week 5.
+gantt
+    title Agentic AI Lab - suggested 12-week path
+    dateFormat YYYY-MM-DD
+    axisFormat %d %b
+
+    section Core runtime
+    00 Foundations                     :done,    f1, 2026-01-05, 2d
+    01 First Agent (no model)          :done,    f2, after f1, 3d
+    02 Tool Calling + schemas          :done,    f3, after f2, 4d
+    03 Agent Loop + budgets            :done,    f4, after f3, 5d
+
+    section Capabilities
+    04 Memory layers                   :         c1, after f4, 3d
+    05 Planning as a DAG               :         c2, after c1, 3d
+    06 RAG with citations              :         c3, after c2, 4d
+    07 MCP client/server               :         c4, after c3, 4d
+
+    section Scale
+    08 Multi-agent tradeoffs           :         s1, after c4, 3d
+    09 Coding agent, read-only first   :         s2, after s1, 5d
+    10 DevOps incident runbook         :         s3, after s2, 5d
+    11 Bounded autonomy                :         s4, after s3, 4d
+
+    section Production
+    12 Observability + evaluation      :         p1, after s4, 5d
+    13 Edge control plane              :         p2, after p1, 3d
+
+    section Checkpoints
+    Explain the loop without notes     :milestone, m1, after f4, 0d
+    Ship a tool with an approval gate  :milestone, m2, after s1, 0d
+    Pass the eval suite in CI          :milestone, m3, after p1, 0d

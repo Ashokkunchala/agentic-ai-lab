@@ -1,0 +1,28 @@
+%% Five stages between "the model wants something" and "something happened".
+%% The separation is the security model. Collapse stage 3 into stage 4 and you
+%% have given a language model `eval`.
+flowchart TD
+    A["1 PROPOSE<br/>model emits Action(name, arguments)"] --> B
+    B["2 LOOKUP<br/>registry.get(name)<br/>unknown name = observation, not crash"] --> C
+    C["3 VALIDATE<br/>pydantic schema check<br/>unknown fields rejected"] --> D
+    D["4 GATE<br/>PolicyEngine.evaluate(name, risk)<br/>deny > allow > approval > risk default"] --> E{"decision"}
+
+    E -->|DENY| Z1["Observation: denied by policy<br/>nothing executed"]
+    E -->|REQUIRE_APPROVAL| F{"human"}
+    F -->|approved| G
+    F -->|refused| Z2["LoopResult: WAITING_APPROVAL<br/>run parks, resumable"]
+    E -->|ALLOW| G["5 EXECUTE<br/>handler runs in a try block"]
+
+    G --> H["6 OBSERVE<br/>ToolResult(success, output, error, duration_ms)"]
+    H --> I["Observation becomes new state"]
+
+    BAD["What not to do"] -.-> A
+    BAD2["exec(model_output)<br/>subprocess(shell=True)<br/>pickle.loads(untrusted)"] -.-> G
+
+    classDef ok fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef bad fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef gate fill:#7a4b12,stroke:#452a08,color:#fff
+
+    class H,I ok
+    class Z1,Z2 bad
+    class E,F,D gate

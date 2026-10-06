@@ -1,0 +1,48 @@
+%% Cloudflare as the edge control plane. The Worker dispatches; it never
+%% executes privileged work. That split is the entire lesson.
+flowchart TD
+    B["Browser"] --> CF["Cloudflare edge<br/>WAF, DDoS, rate limiting"]
+    CF --> W{"Worker<br/>13-cloudflare/worker.js"}
+
+    subgraph GATES["Four gates in the Worker"]
+        G1["1 method + content-type"]
+        G2["2 x-agent-key, timing-safe compare"]
+        G3["3 body size + goal length caps"]
+        G4["4 dry_run defaults to TRUE"]
+    end
+
+    W --> G1 --> G2 --> G3 --> G4
+
+    G4 -->|reject| ERR(["4xx with a machine-readable code"])
+    G4 -->|accept| Q
+
+    Q[("Cloudflare Queue<br/>durable async work")]
+    Q --> DO[("Durable Object<br/>per-tenant run state,<br/>idempotency, progress")]
+
+    DO --> EXEC{{"Authenticated executor<br/>NOT a Worker"}}
+
+    subgraph EXECPLANE["Execution plane - long-lived, isolated"]
+        AG["Agent runtime<br/>the loop from this repo"]
+        TOOLS["Terraform, kubectl,<br/>shell, AWS SDK"]
+    end
+
+    EXEC --> AG --> TOOLS
+    TOOLS --> AWS[("AWS / Kubernetes / Git")]
+    AG -.->|"logs, metrics, traces"| OBS[("CloudWatch / Workers Analytics")]
+
+    R2[("R2 - objects<br/>run artefacts, logs")]
+
+    GUARD["Why not run it in the Worker?"]:::hdr
+    G5["A Worker is a short-lived isolate:<br/>no shell, no image layers,<br/>no persistent filesystem,<br/>CPU-limited, network-restricted.<br/>Terraform and kubectl do not belong here."]:::bad
+    GUARD -.-> G5
+
+    classDef edge fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef store fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef exec fill:#5c2d6b,stroke:#33183b,color:#fff
+    classDef bad fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef hdr fill:#333,stroke:#000,color:#fff
+
+    class CF,W,G1,G2,G3,G4 edge
+    class Q,DO,R2,OBS store
+    class EXEC,AG,TOOLS exec
+    class GUARD,G5 bad

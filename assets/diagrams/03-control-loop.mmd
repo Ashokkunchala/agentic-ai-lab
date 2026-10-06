@@ -1,0 +1,31 @@
+%% The control loop as a state machine.
+%% The point of this diagram: verification is a CHECK, not a transition you
+%% walk through. That is the bug lesson 03 naive.py demonstrates.
+stateDiagram-v2
+    [*] --> PENDING : goal accepted
+
+    PENDING --> RUNNING : budget checked
+    RUNNING --> RUNNING : action proposed, policy allowed, observation recorded
+
+    RUNNING --> WAITING_APPROVAL : policy requires approval and none granted
+    RUNNING --> COMPLETED : terminal action AND verification passed
+    RUNNING --> FAILED : terminal action AND verification failed
+    RUNNING --> BUDGET_EXHAUSTED : step, tool-call, retry, stall, time or cost limit hit
+    RUNNING --> FAILED : tool retries exhausted for this action
+
+    WAITING_APPROVAL --> RUNNING : a human approves, run resumes
+    WAITING_APPROVAL --> FAILED : approval refused
+
+    COMPLETED --> [*]
+    FAILED --> [*]
+    BUDGET_EXHAUSTED --> [*]
+
+    note right of RUNNING
+        One step = one decide + at most one act.
+        A terminal decision costs exactly one step.
+    end note
+
+    note right of BUDGET_EXHAUSTED
+        Every exit carries a labelled reason.
+        There is no silent return.
+    end note

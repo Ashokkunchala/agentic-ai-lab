@@ -1,3 +1,8 @@
-python-dotenv>=1.0,<2
+# Runtime dependencies. Pinned ranges, not exact versions, so a patch release
+# never breaks a lesson, and a breaking release never lands silently.
+#
+# Everything else (loop, policy, state, memory, retrieval, observability,
+# evaluation) is standard library only. That is a teaching decision: the parts
+# you must understand deeply have no dependencies to read around them.
 pydantic>=2.7,<3
-pytest>=8,<9
+python-dotenv>=1.0,<2

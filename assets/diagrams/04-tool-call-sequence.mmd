@@ -1,0 +1,57 @@
+%% What actually happens during one tool call.
+%% Compare with 03-agent-loop/naive.py, where verification was an ACTION and
+%% therefore consumed a step. Here verify() is a predicate over state.
+sequenceDiagram
+    autonumber
+    participant User
+    participant Loop as AgentLoop
+    participant Planner
+    participant Policy as PolicyEngine
+    participant Gate as ApprovalGate
+    participant Tool
+    participant State as AgentState
+    participant Obs as Observability
+
+    User->>Loop: Goal(objective, max_steps)
+    Loop->>State: initial_state, status=RUNNING
+    Loop->>Obs: log step.begin
+
+    loop until terminal or budget spent
+        Loop->>Loop: budget.exhausted_reason()
+        alt a limit is spent
+            Loop-->>User: LoopResult(status=BUDGET_EXHAUSTED, reason)
+        end
+
+        Loop->>Planner: decide(state, tool schemas)
+        Planner-->>Loop: Action(name, arguments, rationale)
+        Loop->>State: record decision for audit
+
+        alt Action.name is terminal (finish)
+            Loop->>State: verify(state)
+            State-->>Loop: goal met yes/no
+            Loop-->>User: LoopResult(COMPLETED or FAILED)
+        else Action names a tool
+            Loop->>Policy: evaluate(tool, risk)
+            Policy-->>Loop: ALLOW / REQUIRE_APPROVAL / DENY
+
+            alt DENY
+                Loop->>State: observation(success=false, denied by policy)
+            else REQUIRE_APPROVAL
+                Loop->>Gate: ask(tool, arguments)
+                Gate-->>Loop: approver identity or None
+                alt approved
+                    Loop->>Tool: run(arguments)
+                else refused or nobody available
+                    Loop-->>User: LoopResult(status=WAITING_APPROVAL)
+                end
+            else ALLOW
+                Loop->>Tool: run(arguments)
+            end
+
+            Tool->>Tool: validate input against schema
+            Tool->>Tool: execute handler
+            Tool-->>Loop: ToolResult(success, output, error, duration_ms)
+            Loop->>State: add observation, update budget
+            Loop->>Obs: metrics + trace span + log
+        end
+    end

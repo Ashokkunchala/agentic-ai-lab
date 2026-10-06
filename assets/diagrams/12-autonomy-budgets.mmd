@@ -1,0 +1,44 @@
+%% Autonomy is not "no human". It is "a human only where judgement is needed".
+%% Every limit below is enforced in shared/budget.py, not described in a README.
+flowchart TD
+    RUN(["run starts"]) --> CHECK{"budget.exhausted_reason()"}
+
+    CHECK -->|"step budget"| BS["BUDGET_EXHAUSTED"]
+    CHECK -->|"tool-call budget"| BS
+    CHECK -->|"time budget"| BS
+    CHECK -->|"cost budget"| BS
+    CHECK -->|"stall: N consecutive failures"| BS
+    CHECK -->|"all clear"| STEP["charge_step + next_step"]
+
+    STEP --> DECIDE["decide"]
+    DECIDE --> TOOL["act"]
+
+    TOOL --> RESULT{"outcome"}
+    RESULT -->|success| RESET["consecutive_failures = 0"]
+    RESULT -->|failure| INC["consecutive_failures += 1<br/>charge_retry(tool)"]
+
+    RESET --> CHECK
+    INC --> RETRY{"retry budget left<br/>for this tool?"}
+    RETRY -->|yes| CHECK
+    RETRY -->|no| FAIL(["FAILED<br/>reason: retry budget exhausted"])
+
+    POL["Policy"] --> APPR{"approval needed?"}
+    APPR -->|refused| PARK(["WAITING_APPROVAL<br/>resumable, not an error"])
+    APPR -->|granted| TOOL
+
+    LIMITS["Seven controls"]:::hdr
+    L1["max_steps"]
+    L2["max_tool_calls"]
+    L3["max_retries_per_tool"]
+    L4["max_consecutive_failures"]
+    L5["max_seconds"]
+    L6["max_cost_usd"]
+    L7["PolicyEngine + ApprovalGate"]
+    LIMITS -.-> L1 & L2 & L3 & L4 & L5 & L6 & L7
+
+    classDef stop fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef gate fill:#7a4b12,stroke:#452a08,color:#fff
+    classDef hdr fill:#1f4e79,stroke:#0d2b45,color:#fff
+    class BS,FAIL stop
+    class CHECK,RETRY,RESULT,APPR gate
+    class LIMITS,L1,L2,L3,L4,L5,L6,L7 hdr

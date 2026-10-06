@@ -1,0 +1,58 @@
+%% Production reference architecture. The dashed line is the trust boundary:
+%% nothing outside it may be reached without policy + approval.
+flowchart TD
+    CLIENT["Client<br/>web, mobile, CLI"] --> EDGE
+
+    subgraph EDGELAYER["Edge"]
+        WAF["Rate limit, WAF, bot control"]
+        AUTH["Authentication<br/>OIDC / Cognito, signed session"]
+        WAF --> AUTH
+    end
+
+    AUTH --> ORCH["Agent orchestrator<br/>the loop from shared/loop.py"]
+
+    subgraph CORE["Control plane - trusted"]
+        ORCH
+        MA["Model adapter<br/>routing, retries, caching"]
+        SS[("State store<br/>durable runs")]
+        MS[("Memory store<br/>durable facts")]
+        PL["Planner"]
+        PE["Policy engine"]
+        TR["Tool registry"]
+        EV["Evaluation harness"]
+    end
+
+    ORCH --> MA & PL & PE & TR & EV
+    ORCH <--> SS
+    ORCH <--> MS
+
+    TR -.->|"policy + approval<br/>required to cross"| BOUNDARY{{"EXECUTION BOUNDARY"}}
+
+    subgraph EXEC["Execution plane - untrusted, ephemeral, least privilege"]
+        ISOL["Sandbox: container, no host mounts,<br/>no ambient credentials, egress allowlist"]
+        ISOL --> GIT["Git"]
+        ISOL --> TF["Terraform"]
+        ISOL --> K8S["kubectl"]
+        ISOL --> AWS["AWS SDK / CLI"]
+    end
+
+    BOUNDARY --> ISOL
+
+    OBS["Observability<br/>logs, metrics, traces, evals"] -.-> ORCH
+    OBS -.-> EXEC
+
+    GUARD["Secrets live only here.<br/>Never in a prompt, never in a queue message."]
+    GUARD -.-> EXEC
+
+    NOTE["A Worker or a container is a place to run code,<br/>not a trusted component. Assume it is compromised."]
+    ISOL -.-> NOTE
+
+    classDef trust fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef exec fill:#5c2d6b,stroke:#33183b,color:#fff
+    classDef bound fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef store fill:#1d6f5c,stroke:#0d3d33,color:#fff
+
+    class ORCH,MA,PL,PE,TR,EV,AUTH,WAF trust
+    class ISOL,GIT,TF,K8S,AWS exec
+    class BOUNDARY bound
+    class SS,MS store

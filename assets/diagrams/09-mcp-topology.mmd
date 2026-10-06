@@ -1,0 +1,44 @@
+%% MCP topology. The lesson is the two right-hand columns: what the host owns
+%% versus what the server owns. Adopting MCP gives you the middle column only.
+flowchart TD
+    subgraph HOST["Your system - you own all of this"]
+        RT["Agent runtime<br/>goal, state, memory, planning, budgets"]
+        HP["Host policy<br/>server allowlist, tool allowlist,<br/>auth, validation, timeouts,<br/>output size caps, audit log"]
+        CL["MCP client<br/>connection, framing,<br/>request/response correlation"]
+        HUMAN(["Human approver"])
+    end
+
+    subgraph SERVER["Someone else's system - you trust it this far"]
+        SV["MCP server<br/>owns the credentials,<br/>owns the connection"]
+        ST["Server tools"]
+        SR["Server resources"]
+    end
+
+    subgraph WORLD["The actual target"]
+        EXT["AWS / GitHub / database / filesystem"]
+    end
+
+    RT --> CL -->|JSON-RPC 2.0 over stdio| SV
+    SV --> ST --> EXT
+    SV --> SR
+
+    HP -.->|"gates every call"| CL
+    HP -.->|"approves writes"| HUMAN
+    HUMAN -.->|"grant or refuse"| HP
+
+    RISK1["A server you do not control<br/>can return anything it likes"]:::bad
+    RISK2["Without a tool allowlist,<br/>the agent can call every tool the server exposes"]:::bad
+    RISK3["Without an output cap,<br/>one response can evict the whole prompt"]:::bad
+    RISK1 -.-> SV
+    RISK2 -.-> HP
+    RISK3 -.-> HP
+
+    NOTE["MCP is an interoperability layer,<br/>not the agent runtime"]
+    CL -.-> NOTE
+
+    classDef host fill:#1f4e79,stroke:#0d2b45,color:#fff
+    classDef srv fill:#5c2d6b,stroke:#33183b,color:#fff
+    classDef bad fill:#8c2f2f,stroke:#4d1616,color:#fff
+    class RT,HP,CL,HUMAN host
+    class SV,ST,SR srv
+    class RISK1,RISK2,RISK3 bad

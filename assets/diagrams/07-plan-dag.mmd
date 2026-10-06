@@ -1,0 +1,35 @@
+%% A plan is a dependency graph. Runnable steps can execute in parallel; the
+%% order is deterministic so a run can be replayed; a cycle is an error.
+flowchart TD
+    subgraph CI["the ECS incident plan used in lessons 10 and 12"]
+        O1["observe_service"] --> O2["observe_target_group"]
+        O2 --> O3["read_task_failures"]
+        O3 --> O4["read_logs"]
+        O4 --> H["form_hypothesis"]
+        H --> P["propose_change"]
+        P --> AP{{"await_approval"}}
+        AP -->|approved| AC["apply_change"]
+        AP -->|refused| STOP(["park the run"])
+        AC --> V["verify_health"]
+    end
+
+    subgraph CI2["a diamond: independent work runs in parallel"]
+        R["prepare"] --> U["unit_tests"]
+        R --> L["lint"]
+        U --> M["package"]
+        L --> M
+        M --> DEP["deploy"]
+    end
+
+    CYC["a -> b -> c -> a<br/>PlanError: dependency cycle"]:::bad
+    UNK["deploy depends on review_missing<br/>PlanError: unknown step"]:::bad
+
+    NOTE["runnable() returns exactly the steps whose<br/>dependencies are complete - that is the<br/>parallelism boundary"]
+    O1 -.-> NOTE
+
+    classDef ok fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef bad fill:#8c2f2f,stroke:#4d1616,color:#fff
+    classDef gate fill:#7a4b12,stroke:#452a08,color:#fff
+    class AP gate
+    class O1,O2,O3,O4,V ok
+    class CYC,UNK bad

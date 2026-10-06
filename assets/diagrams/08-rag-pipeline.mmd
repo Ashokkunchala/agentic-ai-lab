@@ -1,0 +1,31 @@
+%% Retrieval pipeline with grounding. The citation is not decoration: it is the
+%% only reason an answer can be checked after the fact.
+flowchart LR
+    Q(["user query"]) --> NORM["tokenize + lowercase"]
+    NORM --> STOP{"stop words?"}
+    STOP -->|drop common terms| SCORE
+
+    subgraph IDX["index, built once per chunk set"]
+        CH["chunks"] --> TF["term frequency per chunk"]
+        CH --> DF["document frequency per term"]
+        DF --> IDF["idf = log((N+1)/(df+1)) + 1"]
+    end
+
+    SCORE["score = sum(tf * idf) over matched terms"] --> RANK["sort by score desc, then id for determinism"]
+    RANK --> THRESH{"score > min_score?"}
+    THRESH -->|no| EMPTY["return zero hits<br/>honest, and the agent must cope"]
+    THRESH -->|yes --> TOP["top-k chunks"]
+    TOP --> CITE["attach citation [source#id]"]
+    CITE --> PROMPT["grounded context in the prompt"]
+    PROMPT --> ANSWER(["answer, with traceable sources"])
+
+    EMPTY -.-> AGENT["agent: 'I have no context for that'"]
+    AGENT -.-> ASK(["ask the user, or read a tool"])
+
+    NOTE["Retrieval is a capability.<br/>It does not make a system agentic."]
+    PROMPT -.-> NOTE
+
+    classDef good fill:#1d6f5c,stroke:#0d3d33,color:#fff
+    classDef warn fill:#8c2f2f,stroke:#4d1616,color:#fff
+    class CITE,ANSWER good
+    class EMPTY,NOTE warn
