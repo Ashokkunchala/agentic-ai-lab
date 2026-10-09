@@ -6,23 +6,21 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Least privilege by default. The workflow needs exactly one thing: read code.
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        # CI runs the version pyproject declares as the floor, so a learner on
-        # 3.13 never gets a surprise a 3.11 user would not also get.
-        python-version: ["3.11", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -36,8 +34,8 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-          pip install -e .
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -e .
 
       - name: Lint
         run: ruff check .
@@ -48,27 +46,36 @@ jobs:
       - name: Type check
         run: mypy
 
-      - name: Test (fast)
-        run: pytest -q -m "not slow"
-
-      - name: Test (everything)
+      - name: Test
         run: pytest -q
 
-      - name: Diagrams parse
-        # A broken .mmd file is a broken lesson. Fail the build, not the reader.
+      - name: Validate diagrams
         run: python scripts/check_diagrams.py
+
+  cloudflare-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: 13-cloudflare
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Test Worker validation and authorization
+        run: node worker.test.mjs
 
   no-secrets:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Reject committed secrets
+      - name: Reject committed secret patterns
+        shell: bash
         run: |
-          if git grep -nIE '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})' -- . \
-            ':!docs/**' ':!*.example'; then
+          if git grep -nIE '(sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,})' -- . ':!.env.example'; then
             echo "::error::possible credential committed to the repository"
             exit 1
           fi
-          echo "no credentials found"
+          echo "No matching credential patterns found."

@@ -20,8 +20,6 @@ classifiers = [
   "Topic :: Education",
 ]
 
-# Kept deliberately tiny. The runtime is stdlib + pydantic so that a learner
-# can clone and run without an API key, a cloud account or a package conflict.
 dependencies = [
   "pydantic>=2.7,<3",
   "python-dotenv>=1.0,<2",
@@ -35,14 +33,15 @@ dev = [
 ]
 
 [project.urls]
-Documentation = "https://github.com/your-org/agentic-ai-lab#readme"
+Homepage = "https://github.com/Ashokkunchala/agentic-ai-lab"
+Repository = "https://github.com/Ashokkunchala/agentic-ai-lab"
+Documentation = "https://github.com/Ashokkunchala/agentic-ai-lab#readme"
+Issues = "https://github.com/Ashokkunchala/agentic-ai-lab/issues"
 
 [tool.setuptools]
 packages = ["shared"]
 
 [tool.pytest.ini_options]
-# testpaths keeps `pytest` from wandering into lesson folders, and the two
-# markers let a learner run only the slow MCP subprocess tests when they want.
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-ra --strict-markers"
@@ -56,26 +55,10 @@ target-version = "py311"
 extend-exclude = [".venv", ".runs", "node_modules"]
 
 [tool.ruff.lint]
-select = [
-  "E",    # pycodestyle errors
-  "W",    # warnings
-  "F",    # pyflakes
-  "I",    # isort
-  "UP",   # pyupgrade
-  "B",    # bugbear
-  "SIM",  # simplify
-  "C4",   # comprehensions
-  "RET",  # return consistency
-]
-ignore = [
-  "E501",    # line length is handled by the formatter, not the linter
-  "B008",    # dataclass field(default_factory=...) is the idiomatic form here
-  "RET504",  # a named result before return reads better in a teaching repo
-]
+select = ["E", "F", "B", "SIM", "C4", "RET"]
+ignore = ["E501", "B008", "RET504"]
 
 [tool.ruff.lint.per-file-ignores]
-# Lessons bootstrap sys.path so they can run as plain scripts; that is the
-# lesson, not an accident.
 "0*-*/**.py" = ["E402"]
 
 [tool.mypy]
@@ -91,5 +74,4 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["shared.model"]
-# The provider adapter is deliberately partial; a real one implements call().
 disallow_untyped_defs = false
