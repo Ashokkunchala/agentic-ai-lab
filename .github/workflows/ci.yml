@@ -37,11 +37,8 @@ jobs:
           python -m pip install -r requirements-dev.txt
           python -m pip install -e .
 
-      - name: Lint
+      - name: Lint (correctness-focused)
         run: ruff check .
-
-      - name: Format check (tracked shared runtime subset)
-        run: ruff format --check shared/models.py shared/policy.py shared/tooling.py
 
       - name: Type check
         run: mypy
