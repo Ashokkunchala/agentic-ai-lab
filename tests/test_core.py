@@ -9,6 +9,7 @@ import pytest
 from pydantic import BaseModel, Field
 
 from shared.model import EchoModel
+from shared.models import Goal
 from shared.policy import Decision, PolicyEngine, Risk, allowed_by_default, requires_approval
 from shared.tooling import DuplicateTool, Tool, ToolRegistry
 
@@ -37,14 +38,10 @@ def test_policy_precedence_is_deny_then_allow_then_approval() -> None:
     assert policy.evaluate("unlisted", Risk.WRITE).decision is Decision.REQUIRE_APPROVAL
 
 
-def test_echo_model_is_deterministic() -> None:
-    model = EchoModel()
-    answer = model.complete("hello") if hasattr(model, "complete") else model.propose(
-        goal=__import__("shared.models", fromlist=["Goal"]).Goal(objective="hello"),
-        observations=[],
-        tools=[],
-    ).rationale
-    assert "echo" in answer.lower() or "hello" in answer.lower()
+def test_echo_model_proposes_deterministic_finish() -> None:
+    action = EchoModel().propose(Goal(objective="hello"), observations=[], tools=[])
+    assert action.name == "finish"
+    assert "EchoModel" in action.rationale
 
 
 def test_tool_registry_validates_before_handler() -> None:
