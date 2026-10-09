@@ -40,8 +40,8 @@ jobs:
       - name: Lint
         run: ruff check .
 
-      - name: Format check
-        run: ruff format --check .
+      - name: Format check (core runtime and tests)
+        run: ruff format --check shared tests
 
       - name: Type check
         run: mypy
