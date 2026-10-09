@@ -62,7 +62,7 @@ class Counter:
         self.notes[key] = value
         return {"key": key, "value": value, "note_count": len(self.notes)}
 
-    def check() -> dict[str, Any]:
+    def check(self) -> dict[str, Any]:
         return {"total": self.total, "note_count": len(self.notes), "ready": self.total >= 3}
 
 
@@ -91,8 +91,16 @@ def make_planner(target: int) -> Any:
             return Action(name="finish", rationale=f"target {target} reached at total={total}")
         if not cursor["recorded"]:
             cursor["recorded"] = True
-            return Action(name="record", arguments={"key": "run", "value": "lesson-03"}, rationale="capture provenance first")
-        return Action(name="step", arguments={"count": 1}, rationale=f"total {total} below target {target}")
+            return Action(
+                name="record",
+                arguments={"key": "run", "value": "lesson-03"},
+                rationale="capture provenance first",
+            )
+        return Action(
+            name="step",
+            arguments={"count": 1},
+            rationale=f"total {total} below target {target}",
+        )
 
     return planner
 
