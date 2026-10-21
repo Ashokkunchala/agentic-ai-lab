@@ -1,0 +1,11 @@
+{
+  "name": "JARVIS Personal Assistant",
+  "short_name": "JARVIS",
+  "description": "Your personal DevOps and coding assistant",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "icons": []
+}
