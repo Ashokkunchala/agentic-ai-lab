@@ -1,0 +1,8 @@
+{
+  "name": "personal-jarvis-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": { "test": "node --test worker.test.mjs", "dev": "wrangler dev", "deploy": "wrangler deploy" },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}
