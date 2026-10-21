@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f"><meta name="description" content="Personal JARVIS DevOps and coding assistant">
+<link rel="manifest" href="/manifest.webmanifest"><title>JARVIS — Personal Assistant</title>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#101e30;--line:#263a52;--text:#eaf4ff;--muted:#9db2c9;--accent:#59d7ff;--user:#153650}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#112c46 0,var(--bg) 52%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:2;background:#07111fee;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;gap:12px}
+.logo{height:42px;width:42px;border:1px solid #59d7ff80;border-radius:50%;display:grid;place-items:center;color:var(--accent);font-weight:800;box-shadow:0 0 24px #59d7ff20}h1{font-size:18px;margin:0}header p{font-size:12px;color:var(--muted);margin:0}.status{margin-left:auto;font-size:12px;color:var(--muted)}
+main{max-width:820px;margin:0 auto;padding:18px 14px 190px}.welcome{padding:22px 18px;border:1px solid var(--line);background:#101e30bd;border-radius:18px}.welcome h2{margin:0 0 8px;font-size:23px}.welcome p{margin:0;color:var(--muted)}.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.chips button{border:1px solid var(--line);background:#0c1b2c;color:var(--text);border-radius:999px;padding:9px 12px}
+#messages{display:flex;flex-direction:column;gap:12px;margin-top:18px}.msg{max-width:94%;padding:13px 14px;border:1px solid var(--line);border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}.msg.user{align-self:flex-end;background:var(--user)}.msg.assistant{align-self:flex-start;background:var(--panel)}.msg .who{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.msg.error{border-color:#a64c4c}.composer{position:fixed;bottom:0;left:0;right:0;background:#07111ff2;backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:12px 12px calc(12px + env(safe-area-inset-bottom));z-index:3}.composer-inner{max-width:820px;margin:auto}.keyrow{display:flex;gap:8px;margin-bottom:8px}.keyrow input{min-width:0;flex:1}.inputrow{display:flex;gap:8px;align-items:flex-end}input,textarea{background:#0c1b2c;border:1px solid var(--line);border-radius:12px;padding:12px;color:var(--text);font:inherit;width:100%;outline-color:var(--accent)}textarea{resize:vertical;min-height:48px;max-height:140px}button{cursor:pointer;font:inherit}button:disabled{opacity:.5;cursor:wait}.primary{background:var(--accent);color:#05111b;border:0;border-radius:12px;padding:12px 16px;font-weight:750;min-height:48px}.secondary{background:#13263a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px}.hint{font-size:11px;color:var(--muted);margin:6px 2px 0}.hidden{display:none!important}.actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+@media(min-width:650px){main{padding-top:28px}.welcome{padding:28px}.msg{max-width:85%}}
+</style></head><body>
+<header><div class="logo">J</div><div><h1>JARVIS</h1><p>Personal DevOps & coding assistant</p></div><div class="status" id="status">Ready</div></header>
+<main><section class="welcome" id="welcome"><h2>At your service.</h2><p>Ask about Terraform, AWS, Kubernetes, Git, CI/CD, code, logs, or system design. This MVP explains and drafts commands; it does not run commands or access your cloud accounts.</p><div class="chips"><button type="button" data-prompt="Help me debug a Kubernetes pod stuck in CrashLoopBackOff. Start with read-only checks.">Debug Kubernetes</button><button type="button" data-prompt="Review this Terraform workflow and explain how to use plan safely.">Terraform guidance</button><button type="button" data-prompt="Create a secure CI/CD checklist for a Python application.">CI/CD checklist</button></div></section><section id="messages" aria-live="polite"></section></main>
+<section class="composer"><div class="composer-inner"><div class="keyrow"><input id="accessKey" type="password" autocomplete="off" placeholder="JARVIS access key (stored for this tab only)" aria-label="JARVIS access key"><button class="secondary" id="clearKey" type="button">Clear key</button></div>
+<form id="chatForm"><div class="inputrow"><textarea id="message" maxlength="4000" rows="1" placeholder="Ask JARVIS anything about DevOps…" aria-label="Message to JARVIS" required></textarea><button class="primary" id="send" type="submit">Send</button></div></form>
+<div class="hint">Avoid sharing secrets or production data. Verify commands before running them.</div><div class="actions"><button class="secondary" id="clearChat" type="button">Clear conversation</button><span class="hint">MVP v0.1 · Cloud AI</span></div></div></section>
+<script>
+const $ = (id) => document.getElementById(id), messages = [], key = $("accessKey"), status = $("status"), form = $("chatForm"), input = $("message"), send = $("send"), area = $("messages");
+key.value = sessionStorage.getItem("jarvis-access-key") || "";
+key.addEventListener("change", () => sessionStorage.setItem("jarvis-access-key", key.value));
+$("clearKey").addEventListener("click", () => { key.value = ""; sessionStorage.removeItem("jarvis-access-key"); key.focus(); });
+$("clearChat").addEventListener("click", () => { messages.length = 0; area.replaceChildren(); $("welcome").classList.remove("hidden"); });
+function addMessage(role, content, error = false) {
+  $("welcome").classList.add("hidden");
+  const node = document.createElement("article"); node.className = "msg " + role + (error ? " error" : "");
+  const who = document.createElement("div"); who.className = "who"; who.textContent = role === "user" ? "You" : "JARVIS";
+  const text = document.createElement("div"); text.textContent = content; node.append(who, text); area.append(node); node.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+async function sendMessage(message) {
+  const clean = message.trim(); if (!clean || send.disabled) return;
+  if (!key.value.trim()) { status.textContent = "Access key needed"; addMessage("assistant", "Enter your JARVIS access key below. It is kept in this tab's session storage and sent only to this app's API.", true); key.focus(); return; }
+  addMessage("user", clean); const history = messages.slice(-10); messages.push({role:"user",content:clean}); input.value = ""; send.disabled = true; status.textContent = "Thinking…";
+  try {
+    const response = await fetch("/api/chat", {method:"POST",headers:{"content-type":"application/json","x-jarvis-key":key.value.trim()},body:JSON.stringify({message:clean,history})});
+    const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.hint || body.error || "Request failed (" + response.status + ")");
+    addMessage("assistant", body.answer); messages.push({role:"assistant",content:body.answer}); status.textContent = "Ready";
+  } catch (error) { addMessage("assistant", "I couldn't complete that request: " + error.message, true); status.textContent = "Needs attention"; }
+  finally { send.disabled = false; input.focus(); }
+}
+form.addEventListener("submit", (event) => {event.preventDefault();sendMessage(input.value);});
+document.querySelectorAll("[data-prompt]").forEach((button) => button.addEventListener("click", () => {input.value=button.dataset.prompt;input.focus();}));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+fetch("/api/health").then((r)=>r.json()).then((data)=>{if(!data.ai_configured)status.textContent="AI not configured";}).catch(()=>{status.textContent="Offline";});
+</script></body></html>
