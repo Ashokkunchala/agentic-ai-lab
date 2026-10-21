@@ -1,0 +1,28 @@
+name: JARVIS MVP tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "jarvis/**"
+      - ".github/workflows/jarvis-tests.yml"
+  pull_request:
+    paths:
+      - "jarvis/**"
+      - ".github/workflows/jarvis-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jarvis
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run API unit tests
+        run: npm test
+      - name: Check JavaScript syntax
+        run: node --check worker.js
