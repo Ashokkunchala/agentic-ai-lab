@@ -1,7 +1,7 @@
 const MAX_BODY_BYTES = 12 * 1024;
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_HISTORY_MESSAGES = 12;
-const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: {
