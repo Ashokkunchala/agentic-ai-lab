@@ -1,0 +1,17 @@
+name = "personal-jarvis-mvp"
+main = "worker.js"
+compatibility_date = "2026-10-22"
+
+[observability]
+enabled = true
+
+[ai]
+binding = "AI"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# Set with: npx wrangler secret put JARVIS_ACCESS_KEY
+# Never store the actual key in this file or commit it.
