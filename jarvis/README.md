@@ -44,8 +44,10 @@ Prerequisites: a Cloudflare account, Node.js 20+ and npm on a computer for initi
 
    ~~~powershell
    $bytes = New-Object byte[] 32
-   [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+   $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+   $rng.GetBytes($bytes)
    $JARVIS_KEY = [Convert]::ToBase64String($bytes)
+   $rng.Dispose()
    $JARVIS_KEY
    ~~~
 
