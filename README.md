@@ -22,7 +22,7 @@ A hands-on curriculum for learning agentic AI—from deterministic agents and to
 | [11 — Autonomous agent](11-autonomous-agent/README.md) | Budgets, approvals and auditability |
 | [12 — Production architecture](12-production-architecture/README.md) | Security, observability and evaluation |
 | [13 — Cloudflare](13-cloudflare/README.md) | Edge control plane |
-
+| [14 — AWS Bedrock](14-aws/README.md) | Local agent loop with a cloud model |
 ## Quick start
 
 Requires Python 3.11+. Node.js 20 is needed only for the Cloudflare Worker tests. No paid model API key is required for the introductory deterministic examples.
